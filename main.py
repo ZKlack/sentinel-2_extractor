@@ -31,3 +31,22 @@ bbox = [args.min_lon, args.min_lat, args.max_lon, args.max_lat]
 start_date = args.start_date
 end_date = args.end_date
 interval = args.interval
+
+def get_time_intervals(start, end, interval):
+    # interval: '1M' for one month, '1D' for one day, etc.
+    intervals = []
+    current = datetime.strptime(start, "%Y-%m-%d")
+    end_dt = datetime.strptime(end, "%Y-%m-%d")
+    while current < end_dt:
+        if interval.endswith('M'):
+            next_time = current + relativedelta(months=int(interval[:-1] or 1))
+        elif interval.endswith('D'):
+            next_time = current + timedelta(days=int(interval[:-1] or 1))
+        else:
+            raise ValueError("Unsupported interval format")
+        intervals.append((current.strftime("%Y-%m-%d"), min(next_time, end_dt).strftime("%Y-%m-%d")))
+        current = next_time
+    return intervals
+
+bbox_obj = BBox(bbox, crs=CRS.WGS84)
+time_intervals = get_time_intervals(start_date, end_date, interval)
