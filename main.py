@@ -5,6 +5,8 @@ import argparse
 from datetime import datetime, timedelta, timezone
 from sentinelhub import SentinelHubRequest, DataCollection, MimeType, BBox, CRS, SentinelHubDownloadClient, filter_times
 from dateutil.relativedelta import relativedelta
+import rasterio
+import numpy as np
 
 load_dotenv()  # Load environment variables from .env file
 
@@ -87,10 +89,70 @@ for t_start, t_end in time_intervals:
     requests.append(req)
 
 
-for i, req in enumerate(requests):
-    data = req.get_data(save_data=True)
-    if req.download_list:
-        print(f"Downloaded interval {i}: {req.download_list[0]['filename']}")
-    else:
-        print(f"No data downloaded for interval {i}.")
+def save_tiff(array, reference_src, out_path):
+	profile = reference_src.profile
+	profile.update(
+		dtype=rasterio.float32,
+		count=1,
+		compress='lzw'
+	)
+	with rasterio.open(out_path, 'w', **profile) as dst:
+		dst.write(array.astype(np.float32), 1)
 
+
+band_names = {
+	"B02": ("Blue", 1),
+	"B04": ("Red", 2),
+	"B08": ("NIR", 3),
+	"B11": ("SWIR", 4)
+}
+
+for i, req in enumerate(requests):
+	(t_start, t_end) = time_intervals[i]
+	timewindow = f"{t_start}_{t_end}"
+	current_subdirs = os.listdir("./pulled_data")
+	data = req.get_data(save_data=True)
+
+	if req.download_list:
+		response_id = [d for d in os.listdir("./pulled_data") if d not in current_subdirs][0]
+		response_path = os.path.join("./pulled_data", response_id, "response.tiff")
+		print(f"Downloaded interval {i}: {response_path}")
+
+		indices_dir = os.path.join("./formatted_data", timewindow, "indices")
+		rays_dir = os.path.join("./formatted_data", timewindow, "rays")
+		os.makedirs(indices_dir, exist_ok=True)
+		os.makedirs(rays_dir, exist_ok=True)
+
+		with rasterio.open(response_path) as src:
+			# Extract bands
+			blue = src.read(band_names["B02"][1]).astype(np.float32)
+			red  = src.read(band_names["B04"][1]).astype(np.float32)
+			nir  = src.read(band_names["B08"][1]).astype(np.float32)
+			swir = src.read(band_names["B11"][1]).astype(np.float32)
+
+			# Save rays
+			save_tiff(blue, src, os.path.join(rays_dir, "Blue.tiff"))
+			save_tiff(red,  src, os.path.join(rays_dir, "Red.tiff"))
+			save_tiff(nir,  src, os.path.join(rays_dir, "NIR.tiff"))
+			save_tiff(swir, src, os.path.join(rays_dir, "SWIR.tiff"))
+
+			# Indices
+			ndvi = (nir - red) / (nir + red + 1e-6)
+			save_tiff(ndvi, src, os.path.join(indices_dir, "NDVI.tiff"))
+
+			ndmi = (nir - swir) / (nir + swir + 1e-6)
+			save_tiff(ndmi, src, os.path.join(indices_dir, "NDMI.tiff"))
+
+			bsi = ((swir + red) - (nir + blue)) / ((swir + red) + (nir + blue) + 1e-6)
+			save_tiff(bsi, src, os.path.join(indices_dir, "BSI.tiff"))
+
+			savi = (nir - red) / (nir + red + 0.5 + 1e-6)
+			save_tiff(savi, src, os.path.join(indices_dir, "SAVI.tiff"))
+
+			evi = (nir - red) / (nir - (6 * red) - (7.5 * blue) + 1 + 1e-6)
+			save_tiff(evi, src, os.path.join(indices_dir, "EVI.tiff"))
+
+		print(f"Processed {timewindow} → indices + rays saved.")
+
+	else:
+		print(f"No data downloaded for interval {i}.")
