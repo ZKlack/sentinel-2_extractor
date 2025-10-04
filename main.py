@@ -89,5 +89,8 @@ for t_start, t_end in time_intervals:
 
 for i, req in enumerate(requests):
     data = req.get_data(save_data=True)
-    print(f"Downloaded interval {i}: {req.download_list[0]['filename']}")
+    if req.download_list:
+        print(f"Downloaded interval {i}: {req.download_list[0]['filename']}")
+    else:
+        print(f"No data downloaded for interval {i}.")
 
