@@ -50,3 +50,44 @@ def get_time_intervals(start, end, interval):
 
 bbox_obj = BBox(bbox, crs=CRS.WGS84)
 time_intervals = get_time_intervals(start_date, end_date, interval)
+
+evalscript = """
+//VERSION=3
+function setup() {
+  return {
+    input: ["B02", "B04", "B08", "B11"],
+    output: { bands: 4, sampleType: "UINT16" }
+  };
+}
+function evaluatePixel(sample) {
+  return [sample.B02, sample.B04, sample.B08, sample.B11];
+}
+"""
+
+requests = []
+for t_start, t_end in time_intervals:
+    req = SentinelHubRequest(
+        data_folder='.',
+        evalscript=evalscript,
+        input_data=[
+            SentinelHubRequest.input_data(
+                data_collection=DataCollection.SENTINEL2_L2A,
+                time_interval=(t_start, t_end),
+                mosaicking_order='mostRecent',
+                other_args={"maxCloudCoverage": 30}
+            )
+        ],
+        responses=[
+            SentinelHubRequest.output_response('default', MimeType.TIFF)
+        ],
+        bbox=bbox_obj,
+        size=None,
+        config=config
+    )
+    requests.append(req)
+
+
+for i, req in enumerate(requests):
+    data = req.get_data(save_data=True)
+    print(f"Downloaded interval {i}: {req.download_list[0]['filename']}")
+
