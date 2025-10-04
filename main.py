@@ -67,7 +67,7 @@ function evaluatePixel(sample) {
 requests = []
 for t_start, t_end in time_intervals:
     req = SentinelHubRequest(
-        data_folder='.',
+        data_folder='./pulled_data',
         evalscript=evalscript,
         input_data=[
             SentinelHubRequest.input_data(

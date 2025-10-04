@@ -7,4 +7,5 @@ COPY main.py /app/main.py
 COPY .env /app/.env
 
 WORKDIR /app
+VOLUME ["/app/pulled_data"]
 ENTRYPOINT ["python", "main.py"]
