@@ -7,6 +7,7 @@ from sentinelhub import SentinelHubRequest, DataCollection, MimeType, BBox, CRS,
 from dateutil.relativedelta import relativedelta
 import rasterio
 import numpy as np
+import math
 
 load_dotenv()  # Load environment variables from .env file
 
@@ -66,6 +67,13 @@ function evaluatePixel(sample) {
 }
 """
 
+def make_size(bbox_obj, resolution):
+	# 1 degree of latitude ~= 111,320 meters
+	hight = ((bbox_obj.max_y - bbox_obj.min_y) * 111320 ) / resolution
+	# 1 degree of longitude ~= 111,320 * cos(latitude) meters
+	width = ((bbox_obj.max_x - bbox_obj.min_x) * 111320 * math.cos(math.radians((bbox_obj.max_y + bbox_obj.min_y)/2))) / resolution
+	return (int(width), int(hight))
+
 requests = []
 for t_start, t_end in time_intervals:
     req = SentinelHubRequest(
@@ -83,7 +91,7 @@ for t_start, t_end in time_intervals:
             SentinelHubRequest.output_response('default', MimeType.TIFF)
         ],
         bbox=bbox_obj,
-        size=None,
+        size=make_size(bbox_obj, 10),
         config=config
     )
     requests.append(req)
