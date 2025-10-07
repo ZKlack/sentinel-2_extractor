@@ -1,4 +1,3 @@
 .env
-pulled_data/
-formatted_data/
+data
 gitignore

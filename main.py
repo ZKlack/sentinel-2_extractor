@@ -9,6 +9,14 @@ import rasterio
 import numpy as np
 import math
 
+# Change working directory to /data
+os.makedirs("/data", exist_ok=True)
+os.chdir("/data")
+
+# insure data directories exist
+os.makedirs("./pulled_data", exist_ok=True)
+os.makedirs("./formatted_data", exist_ok=True)
+
 load_dotenv()  # Load environment variables from .env file
 
 config = SHConfig()

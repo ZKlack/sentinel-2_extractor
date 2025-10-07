@@ -24,8 +24,7 @@ RUN pip install --no-cache-dir numpy
 COPY main.py /app/main.py
 
 # Define mountable directories
-VOLUME ["/app/pulled_data"]
-VOLUME ["/app/formatted_data"]
+VOLUME [ "/data" ]
 
 # Set working directory and entrypoint
 WORKDIR /app
