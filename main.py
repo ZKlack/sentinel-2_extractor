@@ -59,7 +59,7 @@ evalscript = """
 function setup() {
   return {
     input: ["B02", "B04", "B08", "B11"],
-    output: { bands: 4, sampleType: "UINT16" }
+    output: { bands: 4, sampleType: "FLOAT32" }
   };
 }
 function evaluatePixel(sample) {
