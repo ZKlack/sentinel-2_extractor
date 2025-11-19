@@ -91,7 +91,7 @@ for t_start, t_end in time_intervals:
             SentinelHubRequest.input_data(
                 data_collection=DataCollection.SENTINEL2_L2A,
                 time_interval=(t_start, t_end),
-                mosaicking_order='mostRecent',
+                mosaicking_order='leastCC',
                 other_args={"maxCloudCoverage": 30}
             )
         ],
@@ -162,10 +162,10 @@ for i, req in enumerate(requests):
 			bsi = ((swir + red) - (nir + blue)) / ((swir + red) + (nir + blue) + 1e-6)
 			save_tiff(bsi, src, os.path.join(indices_dir, "BSI.tiff"))
 
-			savi = (nir - red) / (nir + red + 0.5 + 1e-6)
+			savi = ((nir - red) * 1.5) / (nir + red + 0.5 + 1e-6)
 			save_tiff(savi, src, os.path.join(indices_dir, "SAVI.tiff"))
 
-			evi = (nir - red) / (nir - (6 * red) - (7.5 * blue) + 1 + 1e-6)
+			evi = 2.5 * ((nir - red) / (nir + (6 * red) - (7.5 * blue) + 1 + 1e-6))
 			save_tiff(evi, src, os.path.join(indices_dir, "EVI.tiff"))
 
 		print(f"Processed {timewindow} → indices + rays saved.")
